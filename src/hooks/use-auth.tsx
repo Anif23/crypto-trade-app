@@ -70,25 +70,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, loadProfile]);
 
   const signIn = React.useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: mapAuthError(error) };
-    return {};
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { error: mapAuthError(error) };
+      return {};
+    } catch (error) {
+      return { error: mapAuthError(error) };
+    }
   }, []);
 
   const signUp = React.useCallback(async (name: string, email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    });
-    if (error) return { error: mapAuthError(error) };
-    // email confirmation is OFF, so a session should be returned immediately
-    if (data.user) {
-      // give the trigger a moment, then load profile
-      await new Promise((r) => setTimeout(r, 400));
-      await loadProfile(data.user.id);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } },
+      });
+      if (error) return { error: mapAuthError(error) };
+      // email confirmation is OFF, so a session should be returned immediately
+      if (data.user) {
+        // give the trigger a moment, then load profile
+        await new Promise((r) => setTimeout(r, 400));
+        await loadProfile(data.user.id);
+      }
+      return {};
+    } catch (error) {
+      return { error: mapAuthError(error) };
     }
-    return {};
   }, [loadProfile]);
 
   const signOut = React.useCallback(async () => {
@@ -117,17 +125,7 @@ export function useAuth() {
   return ctx;
 }
 
-function mapAuthError(error: { code?: string; message?: string } | string): string {
-  const code = typeof error === "string" ? undefined : error.code;
-  const msg = typeof error === "string" ? error : error.message ?? "";
-
-  if (code === "invalid_credentials" || /invalid(?: login)? credentials/i.test(msg))
-    return "Incorrect email or password.";
-  if (code === "user_already_exists" || /already registered|user already/i.test(msg))
-    return "An account with this email already exists.";
-  if (/rate limit/i.test(msg)) return "Too many attempts. Please wait a minute.";
-  if (/password/i.test(msg) && /weak|short|at least/i.test(msg))
-    return "Password must be at least 8 characters.";
-  if (/email/i.test(msg) && /invalid|not valid/i.test(msg)) return "Please enter a valid email.";
-  return "Something went wrong. Please try again.";
+function mapAuthError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message || "Something went wrong. Please try again.";
 }

@@ -19,11 +19,12 @@ import { ChangeBadge } from "@/components/ui/change";
 import { useAssets } from "@/hooks/use-api";
 import { useAuth } from "@/hooks/use-auth";
 import { formatPrice } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function LandingPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
-  const { data: assets } = useAssets();
+  const { data: assets, isLoading } = useAssets();
   const topCoins = (assets ?? []).slice(0, 6);
 
   useEffect(() => {
@@ -94,20 +95,31 @@ export function LandingPage() {
           </div>
 
           {/* live price ticker */}
-          {topCoins.length > 0 && (
-            <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {topCoins.map((c) => (
-                <Card key={c.id} className="p-4">
-                  <div className="flex items-center gap-2">
-                    <CoinIcon src={c.image_url} symbol={c.symbol} size={24} />
-                    <span className="text-sm font-semibold">{c.symbol}</span>
+          <div className="mx-auto mt-14 max-w-5xl">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+              {isLoading
+                ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-6 w-6 rounded-full" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                    <Skeleton className="mt-3 h-4 w-20" />
+                    <Skeleton className="mt-2 h-4 w-14" />
                   </div>
-                  <p className="mt-2 text-sm font-medium tabular">{formatPrice(c.current_price)}</p>
-                  <ChangeBadge value={c.price_change_percentage_24h} className="mt-1" />
-                </Card>
-              ))}
+                ))
+                : topCoins.map((c) => (
+                  <Card key={c.id} className="p-4">
+                    <div className="flex items-center gap-2">
+                      <CoinIcon src={c.image_url} symbol={c.symbol} size={24} />
+                      <span className="text-sm font-semibold">{c.symbol}</span>
+                    </div>
+                    <p className="mt-2 text-sm font-medium tabular">{formatPrice(c.current_price)}</p>
+                    <ChangeBadge value={c.price_change_percentage_24h} className="mt-1" />
+                  </Card>
+                ))}
             </div>
-          )}
+          </div>
         </div>
       </section>
 
@@ -124,21 +136,37 @@ export function LandingPage() {
             </Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {(assets ?? []).slice(0, 8).map((c) => (
-              <Card key={c.id} className="flex items-center justify-between p-4 transition-colors hover:border-primary/40">
-                <Link to={`/coin/${c.id}`} className="flex items-center gap-3">
-                  <CoinIcon src={c.image_url} symbol={c.symbol} size={32} />
-                  <div>
-                    <p className="text-sm font-semibold">{c.name}</p>
-                    <p className="text-xs uppercase text-muted-foreground">{c.symbol}</p>
+            {isLoading
+              ? Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
                   </div>
-                </Link>
-                <div className="text-right">
-                  <p className="text-sm font-medium tabular">{formatPrice(c.current_price)}</p>
-                  <ChangeBadge value={c.price_change_percentage_24h} className="mt-1" />
+                  <div className="space-y-2 text-right">
+                    <Skeleton className="ml-auto h-4 w-20" />
+                    <Skeleton className="ml-auto h-3 w-14" />
+                  </div>
                 </div>
-              </Card>
-            ))}
+              ))
+              : (assets ?? []).slice(0, 8).map((c) => (
+                <Card key={c.id} className="flex items-center justify-between p-4 transition-colors hover:border-primary/40">
+                  <Link to={`/coin/${c.id}`} className="flex items-center gap-3">
+                    <CoinIcon src={c.image_url} symbol={c.symbol} size={32} />
+                    <div>
+                      <p className="text-sm font-semibold">{c.name}</p>
+                      <p className="text-xs uppercase text-muted-foreground">{c.symbol}</p>
+                    </div>
+                  </Link>
+                  <div className="text-right">
+                    <p className="text-sm font-medium tabular">{formatPrice(c.current_price)}</p>
+                    <ChangeBadge value={c.price_change_percentage_24h} className="mt-1" />
+                  </div>
+                </Card>
+              ))}
           </div>
         </div>
       </section>

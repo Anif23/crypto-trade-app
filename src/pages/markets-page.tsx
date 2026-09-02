@@ -5,17 +5,26 @@ import { MarketTable } from "@/components/market-table";
 import { ErrorState } from "@/components/states";
 import { useAssets } from "@/hooks/use-api";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
 
 export function MarketsPage() {
   const { data, isLoading, error, refetch } = useAssets();
+  const { session } = useAuth();
   const [size] = useState(15);
 
   return (
     <div className="space-y-6 p-5 lg:p-10">
-      <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" />
-        Back to home
-      </Link>
+      {session ?
+        <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </Link>
+        : (
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
+        )}
       <div className="flex items-center gap-2">
         <LineChart className="h-6 w-6 text-primary" />
         <div>
