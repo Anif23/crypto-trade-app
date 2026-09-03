@@ -19,7 +19,7 @@ const corsHeaders = {
 
 const CG = "https://api.coingecko.com/api/v3";
 const BINANCE = "https://api.binance.com/api/v3";
-const FRESH_MS = 60_000;
+const FRESH_MS = 30_000; // Reduced to 30 seconds for more frequent updates
 
 const INTERVAL_CONFIG: Record<string, { ttlMin: number; binance: string; limit: number }> = {
   "1H": { ttlMin: 5, binance: "1m", limit: 60 },
@@ -245,6 +245,7 @@ async function handleHistory(
 ) {
   const cfg = INTERVAL_CONFIG[interval];
 
+  // First, get the current live price from crypto_assets
   const { data: asset } = await supa
     .from("crypto_assets")
     .select("coingecko_id,current_price")
@@ -253,7 +254,33 @@ async function handleHistory(
 
   if (!asset) return json({ error: "asset_not_found" }, 404);
 
+  // Get the current live price from Binance for most accurate data
+  let currentLivePrice = asset.current_price;
+  let usdInrRate = FALLBACK_USD_INR;
   const symbol = BINANCE_MAP[asset.coingecko_id];
+
+  if (symbol && symbol !== "USDTUSDT") {
+    try {
+      const liveResp = await fetchWithTimeout(
+        `${BINANCE}/ticker/price?symbol=${symbol}`
+      );
+      if (liveResp.ok) {
+        const liveData = await liveResp.json();
+        const binancePrice = Number(liveData.price);
+        if (binancePrice > 0 && Number(asset.current_price) > 0) {
+          // Keep Binance candles on the same INR scale as the market asset price.
+          usdInrRate = Number(asset.current_price) / binancePrice;
+          currentLivePrice = Number(asset.current_price);
+        } else {
+          usdInrRate = await getUsdInrRate();
+          currentLivePrice = binancePrice * usdInrRate;
+        }
+      }
+    } catch {
+      // Use cached price
+    }
+  }
+
   let fetchedFromBinance = false;
 
   if (symbol && symbol !== "USDTUSDT") {
@@ -264,17 +291,15 @@ async function handleHistory(
 
       if (res.ok) {
         const klines = await res.json();
-        const rate = await getUsdInrRate();
-
         const rows = klines
           .map((k: any) => ({
             asset_id: assetId,
             interval,
             time: Math.floor(Number(k[0]) / 1000),
-            open: Number(k[1]) * rate,
-            high: Number(k[2]) * rate,
-            low: Number(k[3]) * rate,
-            close: Number(k[4]) * rate,
+            open: Number(k[1]) * usdInrRate,
+            high: Number(k[2]) * usdInrRate,
+            low: Number(k[3]) * usdInrRate,
+            close: Number(k[4]) * usdInrRate,
             volume: Number(k[5]),
           }))
           .filter(
@@ -287,6 +312,12 @@ async function handleHistory(
           );
 
         if (rows.length > 0) {
+          // Update the last candle's close with current live price
+          const lastRow = rows[rows.length - 1];
+          lastRow.close = currentLivePrice;
+          lastRow.high = Math.max(lastRow.high, currentLivePrice);
+          lastRow.low = Math.min(lastRow.low, currentLivePrice);
+
           await supa
             .from("price_history")
             .delete()
@@ -318,11 +349,19 @@ async function handleHistory(
     return json({ error: "db_error", detail: error.message }, 500);
   }
 
+  // Update the last candle with current live price if we have candles
+  if (candles && candles.length > 0 && currentLivePrice > 0) {
+    const lastCandle = candles[candles.length - 1];
+    lastCandle.close = currentLivePrice;
+    lastCandle.high = Math.max(Number(lastCandle.high), currentLivePrice);
+    lastCandle.low = Math.min(Number(lastCandle.low), currentLivePrice);
+  }
+
   // If no candles exist and we have a current price, generate synthetic data
   if (!candles || candles.length === 0) {
-    if (asset.current_price && asset.current_price > 0) {
+    if (currentLivePrice && currentLivePrice > 0) {
       const syntheticCandles = generateSyntheticCandles(
-        Number(asset.current_price),
+        currentLivePrice,
         interval,
         Math.min(cfg.limit, 50) // Generate fewer synthetic candles
       );

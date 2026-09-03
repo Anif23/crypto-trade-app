@@ -9,6 +9,7 @@ interface AuthContextValue {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signInWithGoogle: () => Promise<{ error?: string }>;
   signUp: (name: string, email: string, password: string) => Promise<{ error?: string; success?: boolean; needsConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -27,10 +28,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select("*")
       .eq("id", uid)
       .maybeSingle();
+    
     if (error) {
       setProfile(null);
       return;
     }
+    
+    // If profile doesn't exist (OAuth user), create it
+    if (!data) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const userName = user.user_metadata?.name || 
+                         user.user_metadata?.full_name || 
+                         user.email?.split('@')[0] || 
+                         'User';
+        
+        const { data: newProfile } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            name: userName,
+            email: user.email!,
+            cash_balance: 8300000,
+          })
+          .select()
+          .single();
+        
+        setProfile(newProfile as Profile | null);
+        return;
+      }
+    }
+    
     setProfile(data as Profile | null);
   }, []);
 
@@ -130,6 +158,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.message.includes("already registered") || error.message.includes("already exists") || error.message.includes("User already registered")) {
         return { error: "This email is already registered. Please sign in instead." };
       }
+      if (error.status === 429 || /rate limit|rate_limit|too many requests/i.test(error.message)) {
+        return { error: "Email sending is temporarily rate-limited by Supabase. Please wait a few minutes before trying again, or configure a custom SMTP provider in Supabase." };
+      }
       return { error: mapAuthError(error.message) };
     }
 
@@ -147,6 +178,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true, needsConfirmation: true };
   }, [loadProfile]);
 
+  const signInWithGoogle = React.useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return {};
+    } catch (err) {
+      console.error("Google sign in error:", err);
+      return { error: "Failed to sign in with Google. Please try again." };
+    }
+  }, []);
+
   const signOut = React.useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
@@ -159,6 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile,
     loading,
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
     refreshProfile,
@@ -176,5 +228,8 @@ export function useAuth() {
 
 function mapAuthError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
+  if (/rate limit|rate_limit|too many requests/i.test(message)) {
+    return "Email sending is temporarily rate-limited by Supabase. Please wait a few minutes before trying again, or configure a custom SMTP provider in Supabase.";
+  }
   return message || "Something went wrong. Please try again.";
 }

@@ -28,7 +28,7 @@ export function CoinDetailPage() {
   const { session } = useAuth();
   const portfolio = usePortfolio(!!session);
 
-  const livePrice = useLivePrice(asset?.coingecko_id);
+  const livePrice = useLivePrice(asset?.coingecko_id, asset?.current_price);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [tradeSide, setTradeSide] = useState<"BUY" | "SELL">("BUY");
 

@@ -3,6 +3,7 @@ import { supabase, callEdge } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/hooks/use-auth";
 import type {
   CryptoAsset,
   Candle,
@@ -142,6 +143,7 @@ export function useHoldings() {
 export function useTrade() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { refreshProfile } = useAuth();
   return useMutation({
     mutationFn: async ({
       assetId,
@@ -160,7 +162,7 @@ export function useTrade() {
       if (error) throw new Error(error.message);
       return data as TradeResult;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       qc.setQueryData<CryptoAsset[]>(queryKeys.assets, (assets) =>
         assets?.map((asset) =>
           asset.id === variables.assetId
@@ -172,12 +174,15 @@ export function useTrade() {
         queryKeys.asset(variables.assetId),
         (asset) => (asset ? { ...asset, current_price: data.price } : asset),
       );
-      qc.invalidateQueries({ queryKey: queryKeys.assets });
-      qc.invalidateQueries({ queryKey: queryKeys.asset(variables.assetId) });
-      qc.invalidateQueries({ queryKey: queryKeys.portfolio });
-      qc.invalidateQueries({ queryKey: ["holdings"] });
-      qc.invalidateQueries({ queryKey: queryKeys.orders() });
-      qc.invalidateQueries({ queryKey: queryKeys.watchlist });
+      await Promise.all([
+        refreshProfile(),
+        qc.refetchQueries({ queryKey: queryKeys.assets }),
+        qc.refetchQueries({ queryKey: queryKeys.asset(variables.assetId) }),
+        qc.refetchQueries({ queryKey: queryKeys.portfolio }),
+        qc.refetchQueries({ queryKey: ["holdings"] }),
+        qc.refetchQueries({ queryKey: ["orders"] }),
+        qc.refetchQueries({ queryKey: queryKeys.watchlist }),
+      ]);
       toast({
         title: `${data.side} confirmed`,
         description: `Filled ${data.quantity} @ ${formatPrice(data.price)} — virtual cash balance updated.`,

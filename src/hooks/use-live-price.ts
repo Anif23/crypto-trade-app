@@ -10,16 +10,14 @@ export interface LivePrice {
   volume: number;
 }
 
-let usdInrRate = 83.5;
-
-const toINR = (v: number) => v * usdInrRate;
-
 export function useLivePrice(
-  coingeckoId?: string
+  coingeckoId?: string,
+  referencePrice?: number
 ): LivePrice | null {
   const [live, setLive] = useState<LivePrice | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const conversionRateRef = useRef<number | null>(null);
 
   const connect = useCallback(() => {
     if (!coingeckoId) return;
@@ -40,6 +38,19 @@ export function useLivePrice(
 
       if (!close || !open) return;
 
+      if (
+        conversionRateRef.current == null &&
+        referencePrice != null &&
+        referencePrice > 0
+      ) {
+        conversionRateRef.current = referencePrice / close;
+      }
+
+      // Wait for the API INR baseline instead of showing a hardcoded conversion.
+      if (conversionRateRef.current == null) return;
+
+      const toINR = (value: number) => value * conversionRateRef.current!;
+
       const newPrice = {
         price: toINR(close),
         change: toINR(close - open),
@@ -49,12 +60,6 @@ export function useLivePrice(
         volume: Number(d.v),
       };
 
-      console.log('Live price update:', {
-        symbol,
-        priceINR: newPrice.price.toFixed(2),
-        changePct: newPrice.changePct.toFixed(2) + '%'
-      });
-
       setLive(newPrice);
     };
 
@@ -63,9 +68,10 @@ export function useLivePrice(
     };
 
     ws.onerror = () => ws.close();
-  }, [coingeckoId]);
+  }, [coingeckoId, referencePrice]);
 
   useEffect(() => {
+    conversionRateRef.current = null;
     connect();
 
     return () => {
