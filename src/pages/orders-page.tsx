@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import { CoinIcon } from "@/components/coin-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/states";
@@ -12,6 +13,53 @@ import { useOrders } from "@/hooks/use-api";
 import { formatUSD, formatPrice, formatQuantity, formatDateTime } from "@/lib/utils";
 
 const SIDES = ["ALL", "BUY", "SELL"];
+
+type OrdersTableProps = {
+  rows: NonNullable<ReturnType<typeof useOrders>["data"]>["rows"];
+};
+
+function OrdersTable({ rows }: OrdersTableProps) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[600px] text-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-xs text-muted-foreground">
+            <th className="px-3 pb-3 text-left font-medium">Date</th>
+            <th className="px-3 pb-3 text-left font-medium">Coin</th>
+            <th className="px-3 pb-3 text-left font-medium">Type</th>
+            <th className="px-3 pb-3 text-right font-medium">Quantity</th>
+            <th className="px-3 pb-3 text-right font-medium">Price</th>
+            <th className="px-3 pb-3 text-right font-medium">Total</th>
+            <th className="px-3 pb-3 text-right font-medium hidden sm:table-cell">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((o) => (
+            <tr key={o.id} className="border-b border-border/40 hover:bg-secondary/20">
+              <td className="whitespace-nowrap px-3 py-3 text-left text-muted-foreground text-xs sm:text-sm">{formatDateTime(o.created_at)}</td>
+              <td className="px-3 py-3 text-left">
+                <Link to={`/coin/${o.asset_id}`} className="flex items-center gap-2 hover:text-primary">
+                  <CoinIcon src={o.crypto_assets?.image_url} symbol={o.crypto_assets?.symbol ?? ""} size={20} className="sm:w-6 sm:h-6" />
+                  <div className="min-w-0">
+                    <p className="truncate font-medium uppercase text-sm">{o.crypto_assets?.symbol}</p>
+                    <p className="truncate text-xs text-muted-foreground hidden sm:block">{o.crypto_assets?.name}</p>
+                  </div>
+                </Link>
+              </td>
+              <td className="px-3 py-3 text-left">
+                <Badge variant={o.side === "BUY" ? "success" : "destructive"} className="text-xs">{o.side}</Badge>
+              </td>
+              <td className="px-3 py-3 text-right tabular-nums text-sm">{formatQuantity(o.quantity)}</td>
+              <td className="px-3 py-3 text-right tabular-nums text-sm">{formatPrice(o.price)}</td>
+              <td className="px-3 py-3 text-right font-medium tabular-nums text-sm">{formatUSD(o.total)}</td>
+              <td className="px-3 py-3 text-right hidden sm:table-cell"><Badge variant="muted" className="text-xs">{o.status}</Badge></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function OrdersPage() {
   const [side, setSide] = useState("ALL");
@@ -63,51 +111,15 @@ export function OrdersPage() {
           ) : isLoading ? (
             <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
           ) : data && data.rows.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="pb-3 font-medium">Date</th>
-                    <th className="pb-3 font-medium">Coin</th>
-                    <th className="pb-3 font-medium">Type</th>
-                    <th className="pb-3 text-right font-medium">Quantity</th>
-                    <th className="pb-3 text-right font-medium">Price</th>
-                    <th className="pb-3 text-right font-medium">Total</th>
-                    <th className="pb-3 text-right font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.rows.map((o) => (
-                    <tr key={o.id} className="border-b border-border/40 hover:bg-secondary/20">
-                      <td className="py-3 text-muted-foreground">{formatDateTime(o.created_at)}</td>
-                      <td className="py-3">
-                        <Link to={`/coin/${o.asset_id}`} className="flex items-center gap-2 hover:text-primary">
-                          <CoinIcon src={o.crypto_assets?.image_url} symbol={o.crypto_assets?.symbol ?? ""} size={24} />
-                          <div>
-                            <p className="font-medium uppercase">{o.crypto_assets?.symbol}</p>
-                            <p className="text-xs text-muted-foreground">{o.crypto_assets?.name}</p>
-                          </div>
-                        </Link>
-                      </td>
-                      <td className="py-3">
-                        <Badge variant={o.side === "BUY" ? "success" : "destructive"}>{o.side}</Badge>
-                      </td>
-                      <td className="py-3 text-right tabular">{formatQuantity(o.quantity)}</td>
-                      <td className="py-3 text-right tabular">{formatPrice(o.price)}</td>
-                      <td className="py-3 text-right tabular font-medium">{formatUSD(o.total)}</td>
-                      <td className="py-3 text-right">
-                        <Badge variant="muted">{o.status}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Page {page}</p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-                  <Button variant="outline" size="sm" disabled={data.rows.length < 15} onClick={() => setPage((p) => p + 1)}>Next</Button>
-                </div>
+            <div>
+              <OrdersTable rows={data.rows} />
+              <div className="mt-4">
+                <Pagination
+                  currentPage={page}
+                  totalPages={data.rows.length < 15 ? page : page + 1}
+                  onPageChange={setPage}
+                  showInfo={false}
+                />
               </div>
             </div>
           ) : (

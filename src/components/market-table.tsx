@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Star, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { CoinIcon } from "@/components/coin-icon";
 import { ChangeBadge } from "@/components/ui/change";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,12 +14,11 @@ import type { CryptoAsset } from "@/types";
 type SortKey = "rank" | "current_price" | "price_change_percentage_24h" | "total_volume" | "market_cap";
 type SortDir = "asc" | "desc";
 
-const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
-  // { key: "rank", label: "#" },
+const COLUMNS: { key: SortKey; label: string; align?: "right"; hideOnMobile?: boolean }[] = [
   { key: "current_price", label: "Price", align: "right" },
   { key: "price_change_percentage_24h", label: "24h", align: "right" },
-  { key: "total_volume", label: "Volume", align: "right" },
-  { key: "market_cap", label: "Market Cap", align: "right" },
+  { key: "total_volume", label: "Volume", align: "right", hideOnMobile: true },
+  { key: "market_cap", label: "Market Cap", align: "right", hideOnMobile: true },
 ];
 
 export function MarketTable({
@@ -100,22 +100,23 @@ export function MarketTable({
       )}
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[500px] text-sm">
           <thead>
             <tr className="border-b border-border bg-secondary/40">
-              <th className="sticky left-0 z-10 bg-secondary/40 px-4 py-3 text-left font-medium text-muted-foreground">
+              <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                 Coin
               </th>
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
-                    "px-4 py-3 font-medium text-muted-foreground cursor-pointer select-none whitespace-nowrap",
-                    col.align === "right" ? "text-right" : "text-left"
+                    "px-3 sm:px-4 py-3 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground whitespace-nowrap",
+                    col.align === "right" ? "text-right" : "text-left",
+                    col.hideOnMobile && "hidden md:table-cell"
                   )}
                   onClick={() => toggleSort(col.key)}
                 >
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 justify-end w-full">
                     {col.label}
                     {sortKey === col.key ? (
                       sortDir === "asc" ? (
@@ -129,18 +130,38 @@ export function MarketTable({
                   </span>
                 </th>
               ))}
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Watch</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading
-              ? Array.from({ length: 8 }).map((_, i) => (
+              ? Array.from({ length: pageSize }).map((_, i) => (
                   <tr key={i} className="border-b border-border/50">
-                    <td className="px-4 py-4"><Skeleton className="h-8 w-32" /></td>
-                    {COLUMNS.map((c) => (
-                      <td key={c.key} className="px-4 py-4"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                    <td className="px-3 sm:px-4 py-3">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Skeleton className="h-6 w-6 sm:h-7 sm:w-7 rounded-full" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-3 w-12" />
+                        </div>
+                      </div>
+                    </td>
+                    {COLUMNS.map((col) => (
+                      <td
+                        key={col.key}
+                        className={cn(
+                          "px-3 sm:px-4 py-3",
+                          col.hideOnMobile && "hidden md:table-cell"
+                        )}
+                      >
+                        <Skeleton className="h-4 w-16 ml-auto" />
+                      </td>
                     ))}
-                    <td className="px-4 py-4"><Skeleton className="h-5 w-5 ml-auto" /></td>
+                    <td className="px-3 sm:px-4 py-3">
+                      <Skeleton className="h-5 w-5 ml-auto" />
+                    </td>
                   </tr>
                 ))
               : pageData.map((a) => {
@@ -151,31 +172,31 @@ export function MarketTable({
                       className="group cursor-pointer border-b border-border/50 transition-colors hover:bg-secondary/30"
                       onClick={() => go(a)}
                     >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="w-5 text-xs text-muted-foreground tabular">{a.rank ?? "—"}</span>
-                          <CoinIcon src={a.image_url} symbol={a.symbol} size={28} />
+                      <td className="px-3 sm:px-4 py-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="hidden sm:inline-block w-5 text-xs text-muted-foreground tabular">{a.rank ?? "—"}</span>
+                          <CoinIcon src={a.image_url} symbol={a.symbol} size={24} className="sm:w-7 sm:h-7" />
                           <div className="min-w-0">
-                            <p className="truncate font-medium">{a.name}</p>
+                            <p className="truncate font-medium text-sm sm:text-base">{a.name}</p>
                             <p className="text-xs uppercase text-muted-foreground">{a.symbol}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-medium tabular">{formatPrice(a.current_price)}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 sm:px-4 py-3 text-right font-medium tabular text-sm">{formatPrice(a.current_price)}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right">
                         <ChangeBadge value={a.price_change_percentage_24h} />
                       </td>
-                      <td className="px-4 py-3 text-right tabular text-muted-foreground">
+                      <td className="hidden md:table-cell px-3 sm:px-4 py-3 text-right tabular text-muted-foreground">
                         {formatINR(a.total_volume, { compact: true })}
                       </td>
-                      <td className="px-4 py-3 text-right tabular text-muted-foreground">
+                      <td className="hidden md:table-cell px-3 sm:px-4 py-3 text-right tabular text-muted-foreground">
                         {formatINR(a.market_cap, { compact: true })}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 sm:px-4 py-3 text-right">
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          className="h-8 w-8"
+                          className="h-7 w-7 sm:h-8 sm:w-8"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggle.mutate({ assetId: a.id, add: !watched });
@@ -198,19 +219,13 @@ export function MarketTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {filtered.length} coins · page {page} of {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              Next
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filtered.length}
+          itemsPerPage={pageSize}
+        />
       )}
     </div>
   );

@@ -146,8 +146,8 @@ export function CoinDetailPage() {
       )}
 
       {/* chart */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
+      {/* <Card>
+        <CardContent className="p-4 sm:p-6"> */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1">
               {INTERVALS.map((iv) => (
@@ -186,8 +186,8 @@ export function CoinDetailPage() {
             height={400}
             isPending={isPending}
           />
-        </CardContent>
-      </Card>
+        {/* </CardContent>
+      </Card> */}
 
       <TradeModal
         open={tradeOpen}

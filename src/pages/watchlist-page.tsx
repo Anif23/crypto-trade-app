@@ -46,15 +46,15 @@ export function WatchlistPage() {
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[500px] text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">Coin</th>
-                    <th className="px-4 py-3 text-right font-medium">Price</th>
-                    <th className="px-4 py-3 text-right font-medium">24h</th>
-                    <th className="px-4 py-3 text-right font-medium">Market Cap</th>
-                    <th className="px-4 py-3 text-right font-medium">Volume</th>
-                    <th className="px-4 py-3"></th>
+                    <th className="px-3 sm:px-4 py-3 font-medium">Coin</th>
+                    <th className="px-3 sm:px-4 py-3 text-right font-medium">Price</th>
+                    <th className="px-3 sm:px-4 py-3 text-right font-medium">24h</th>
+                    <th className="px-3 sm:px-4 py-3 text-right font-medium hidden md:table-cell">Market Cap</th>
+                    <th className="px-3 sm:px-4 py-3 text-right font-medium hidden md:table-cell">Volume</th>
+                    <th className="px-3 sm:px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -62,23 +62,24 @@ export function WatchlistPage() {
                     const a = live!;
                     return (
                       <tr key={asset_id} className="border-b border-border/40 hover:bg-secondary/20">
-                        <td className="px-4 py-3">
+                        <td className="px-3 sm:px-4 py-3">
                           <Link to={`/coin/${a.id}`} className="flex items-center gap-2 hover:text-primary">
-                            <CoinIcon src={a.image_url} symbol={a.symbol} size={28} />
+                            <CoinIcon src={a.image_url} symbol={a.symbol} size={24} className="sm:w-7 sm:h-7" />
                             <div>
-                              <p className="font-medium">{a.name}</p>
+                              <p className="font-medium text-sm sm:text-base">{a.name}</p>
                               <p className="text-xs uppercase text-muted-foreground">{a.symbol}</p>
                             </div>
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-right font-medium tabular">{formatPrice(a.current_price)}</td>
-                        <td className="px-4 py-3 text-right"><ChangeBadge value={a.price_change_percentage_24h} /></td>
-                        <td className="px-4 py-3 text-right tabular text-muted-foreground">{formatINR(a.market_cap, { compact: true })}</td>
-                        <td className="px-4 py-3 text-right tabular text-muted-foreground">{formatINR(a.total_volume, { compact: true })}</td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-3 sm:px-4 py-3 text-right font-medium tabular text-sm">{formatPrice(a.current_price)}</td>
+                        <td className="px-3 sm:px-4 py-3 text-right"><ChangeBadge value={a.price_change_percentage_24h} /></td>
+                        <td className="px-3 sm:px-4 py-3 text-right tabular text-muted-foreground text-sm hidden md:table-cell">{formatINR(a.market_cap, { compact: true })}</td>
+                        <td className="px-3 sm:px-4 py-3 text-right tabular text-muted-foreground text-sm hidden md:table-cell">{formatINR(a.total_volume, { compact: true })}</td>
+                        <td className="px-3 sm:px-4 py-3 text-right">
                           <Button
                             variant="ghost"
                             size="icon-sm"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
                             onClick={() => toggle.mutate({ assetId: a.id, add: false })}
                             aria-label="Remove from watchlist"
                           >

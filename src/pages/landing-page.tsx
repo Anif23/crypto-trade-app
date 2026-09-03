@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   TrendingUp,
   ShieldCheck,
@@ -11,6 +11,8 @@ import {
   LineChart as LineChartIcon,
   Lock,
   Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +28,7 @@ export function LandingPage() {
   const navigate = useNavigate();
   const { data: assets, isLoading } = useAssets();
   const topCoins = (assets ?? []).slice(0, 6);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (session) navigate("/dashboard", { replace: true });
@@ -35,13 +38,13 @@ export function LandingPage() {
     <div className="min-h-screen bg-background text-foreground">
       {/* nav */}
       <header className="sticky top-0 z-40 border-b border-border glass">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+        <div className="container flex min-h-16 items-center justify-between gap-3 py-3 md:h-16 md:py-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary">
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold tracking-tight">CryptoTrade</span>
-            <span className="ml-1 rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-warning">
+            <span className="truncate text-base font-bold tracking-tight sm:text-lg">CryptoTrade</span>
+            <span className="shrink-0 rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-warning">
               Paper
             </span>
           </div>
@@ -50,11 +53,33 @@ export function LandingPage() {
             <a href="#how" className="text-sm text-muted-foreground hover:text-foreground">How it works</a>
             <a href="#security" className="text-sm text-muted-foreground hover:text-foreground">Security</a>
           </nav>
-          <div className="flex items-center gap-2">
-            <Link to="/login"><Button variant="ghost" size="sm">Sign in</Button></Link>
-            <Link to="/register"><Button size="sm">Get started</Button></Link>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <Link to="/login" className="hidden md:block"><Button variant="ghost" size="sm">Sign in</Button></Link>
+            <Link to="/register" className="hidden md:block"><Button size="sm">Get started</Button></Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="md:hidden"
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+            >
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
+        {mobileMenuOpen && (
+          <nav className="border-t border-border px-4 py-3 md:hidden">
+            <div className="container flex flex-col gap-1">
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Features</a>
+              <a href="#how" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">How it works</a>
+              <a href="#security" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Security</a>
+              <Link to="/login"><Button variant="ghost" size="sm">Sign in</Button></Link>
+              <Link to="/register"><Button size="sm">Get started</Button></Link>
+            </div>
+          </nav>
+        )}
       </header>
 
       {/* hero */}

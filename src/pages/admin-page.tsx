@@ -111,33 +111,33 @@ export function AdminPage() {
             <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
           ) : users.data && users.data.users.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="pb-3 font-medium">User</th>
-                    <th className="pb-3 font-medium">Role</th>
-                    <th className="pb-3 text-right font-medium">Balance</th>
-                    <th className="pb-3 text-right font-medium">Trades</th>
-                    <th className="pb-3 text-right font-medium">Volume</th>
-                    <th className="pb-3 text-right font-medium">Joined</th>
-                    <th className="pb-3 text-right font-medium">Status</th>
+                    <th className="w-[28%] pb-3 pr-4 text-left font-medium">User</th>
+                    <th className="w-[10%] pb-3 pr-4 text-left font-medium">Role</th>
+                    <th className="w-[14%] pb-3 px-4 text-right font-medium">Balance</th>
+                    <th className="w-[10%] pb-3 px-4 text-right font-medium">Trades</th>
+                    <th className="w-[14%] pb-3 px-4 text-right font-medium">Volume</th>
+                    <th className="w-[14%] pb-3 px-4 text-right font-medium">Joined</th>
+                    <th className="w-[10%] pb-3 pl-4 text-right font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.data.users.map((u) => (
                     <tr key={u.id} className="border-b border-border/40">
-                      <td className="py-3">
-                        <p className="font-medium">{u.display_name}</p>
-                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      <td className="py-3 pr-4">
+                        <p className="truncate font-medium">{u.display_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 pr-4 whitespace-nowrap">
                         <Badge variant={u.role === "ADMIN" ? "default" : "muted"}>{u.role}</Badge>
                       </td>
-                      <td className="py-3 text-right tabular">{formatUSD(u.virtual_cash_balance)}</td>
-                      <td className="py-3 text-right tabular">{u.trade_count}</td>
-                      <td className="py-3 text-right tabular text-muted-foreground">{formatCompact(u.trade_volume)}</td>
-                      <td className="py-3 text-right text-muted-foreground">{formatDateTime(u.created_at)}</td>
-                      <td className="py-3 text-right">
+                      <td className="whitespace-nowrap py-3 px-4 text-right tabular">{formatUSD(u.virtual_cash_balance)}</td>
+                      <td className="whitespace-nowrap py-3 px-4 text-right tabular">{u.trade_count}</td>
+                      <td className="whitespace-nowrap py-3 px-4 text-right tabular text-muted-foreground">{formatCompact(u.trade_volume)}</td>
+                      <td className="whitespace-nowrap py-3 px-4 text-right text-muted-foreground">{formatDateTime(u.created_at)}</td>
+                      <td className="py-3 pl-4 text-right">
                         {u.disabled ? (
                           <Button variant="outline" size="sm" onClick={() => setPending({ id: u.id, disabled: false, name: u.email })}>
                             <CheckCircle2 className="h-3.5 w-3.5" /> Enable

@@ -9,7 +9,7 @@ import { MarketTable } from "@/components/market-table";
 import { EmptyState, ErrorState } from "@/components/states";
 import { usePortfolio, useAssets, useOrders, useWatchlist } from "@/hooks/use-api";
 import { useAuth } from "@/hooks/use-auth";
-import { formatUSD, formatPrice, formatQuantity, formatDateTime } from "@/lib/utils";
+import { formatUSD, formatPrice, formatQuantity, formatDateTime, cn } from "@/lib/utils";
 import type { CryptoAsset } from "@/types";
 
 export function DashboardPage() {
@@ -146,33 +146,33 @@ export function DashboardPage() {
             <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
           ) : orders.data && orders.data.rows.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="min-w-[500px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="pb-2 font-medium">Date</th>
-                    <th className="pb-2 font-medium">Coin</th>
-                    <th className="pb-2 font-medium">Type</th>
-                    <th className="pb-2 text-right font-medium">Qty</th>
-                    <th className="pb-2 text-right font-medium">Price</th>
-                    <th className="pb-2 text-right font-medium">Total</th>
+                    <th className="px-2 sm:px-3 pb-2 font-medium">Date</th>
+                    <th className="px-2 sm:px-3 pb-2 font-medium">Coin</th>
+                    <th className="px-2 sm:px-3 pb-2 font-medium">Type</th>
+                    <th className="px-2 sm:px-3 pb-2 text-right font-medium">Qty</th>
+                    <th className="px-2 sm:px-3 pb-2 text-right font-medium hidden sm:table-cell">Price</th>
+                    <th className="px-2 sm:px-3 pb-2 text-right font-medium">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.data.rows.slice(0, 5).map((o) => (
-                    <tr key={o.id} className="border-b border-border/40">
-                      <td className="py-2.5 text-muted-foreground">{formatDateTime(o.created_at)}</td>
-                      <td className="py-2.5">
+                    <tr key={o.id} className="border-b border-border/40 hover:bg-secondary/20">
+                      <td className="whitespace-nowrap px-2 sm:px-3 py-2.5 text-muted-foreground text-xs">{formatDateTime(o.created_at)}</td>
+                      <td className="whitespace-nowrap px-2 sm:px-3 py-2.5">
                         <div className="flex items-center gap-2">
-                          <CoinIcon src={o.crypto_assets?.image_url} symbol={o.crypto_assets?.symbol ?? ""} size={22} />
-                          <span className="font-medium uppercase">{o.crypto_assets?.symbol}</span>
+                          <CoinIcon src={o.crypto_assets?.image_url} symbol={o.crypto_assets?.symbol ?? ""} size={20} className="sm:w-6 sm:h-6" />
+                          <span className="font-medium uppercase text-sm">{o.crypto_assets?.symbol}</span>
                         </div>
                       </td>
-                      <td className="py-2.5">
-                        <span className={o.side === "BUY" ? "text-success" : "text-destructive"}>{o.side}</span>
+                      <td className="px-2 sm:px-3 py-2.5">
+                        <span className={cn("text-xs sm:text-sm", o.side === "BUY" ? "text-success" : "text-destructive")}>{o.side}</span>
                       </td>
-                      <td className="py-2.5 text-right tabular">{formatQuantity(o.quantity)}</td>
-                      <td className="py-2.5 text-right tabular">{formatPrice(o.price)}</td>
-                      <td className="py-2.5 text-right tabular font-medium">{formatUSD(o.total)}</td>
+                      <td className="px-2 sm:px-3 py-2.5 text-right tabular text-xs sm:text-sm">{formatQuantity(o.quantity)}</td>
+                      <td className="px-2 sm:px-3 py-2.5 text-right tabular text-xs sm:text-sm hidden sm:table-cell">{formatPrice(o.price)}</td>
+                      <td className="px-2 sm:px-3 py-2.5 text-right tabular font-medium text-xs sm:text-sm">{formatUSD(o.total)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -221,7 +221,7 @@ function SummaryCard({
   loading?: boolean;
 }) {
   return (
-    <Card className="p-5">
+    <Card className="p-3 sm:p-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{label}</p>
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground">{icon}</div>

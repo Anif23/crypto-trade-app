@@ -86,8 +86,11 @@ export function CandleChart({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const containerWidth = containerRef.current.clientWidth;
+    const isMobile = containerWidth < 640;
+
     const chart = createChart(containerRef.current, {
-      width: containerRef.current.clientWidth,
+      width: containerWidth,
       height,
       layout: {
         background: { color: "transparent" },
@@ -106,11 +109,14 @@ export function CandleChart({
           top: 0.08,
           bottom: 0.25,
         },
+        visible: true,
+        minimumWidth: isMobile ? 50 : 60,
       },
       timeScale: {
         borderColor: "#252b33",
         timeVisible: true,
         secondsVisible: false,
+        barSpacing: isMobile ? 8 : 12,
       },
     });
 
@@ -141,9 +147,18 @@ export function CandleChart({
     volumeRef.current = volumeSeries;
 
     const resize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({
-          width: containerRef.current.clientWidth,
+      if (containerRef.current && chartRef.current) {
+        const newWidth = containerRef.current.clientWidth;
+        const isMobile = newWidth < 640;
+        
+        chartRef.current.applyOptions({ 
+          width: newWidth,
+          rightPriceScale: {
+            minimumWidth: isMobile ? 50 : 60,
+          },
+          timeScale: {
+            barSpacing: isMobile ? 8 : 12,
+          },
         });
       }
     };
@@ -152,8 +167,7 @@ export function CandleChart({
 
     return () => {
       window.removeEventListener("resize", resize);
-      chart.remove();
-
+      chartRef.current?.remove();
       chartRef.current = null;
       candleRef.current = null;
       volumeRef.current = null;
